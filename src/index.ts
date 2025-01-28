@@ -5,6 +5,7 @@ import { createPublicClient, erc20Abi, http } from 'viem'
 import { mainnet } from 'viem/chains'
 import { getContractAddress } from './constants/registry'
 import { getContractCall } from './helpers/viem'
+import { Router } from './router'
 
 /**
  * Create a public client for Mainnet using viem.
@@ -70,6 +71,7 @@ const promptForAmount = async (): Promise<number> => {
  *  - Poll mock API every 10 seconds until success is returned.
  */
 async function main() {
+  const router = new Router().KrakenModule
   console.log('--- Welcome to Sensei ---')
 
   // 1) Prompt user
@@ -81,9 +83,12 @@ async function main() {
   const symbol = await getERC20Symbol(usdcAddress)
   console.log(`Fetched token symbol: ${symbol}\n`)
 
+  // 3) Example: call Kraken api
+  router.swapFromWethToUsdc()
+
   console.log('Entering pending state... will poll every 10 seconds.\n')
 
-  // 3) Poll logic
+  // 4) Poll logic
   let success = false
   while (!success) {
     // Wait 10 seconds between polls
