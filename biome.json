@@ -1,0 +1,77 @@
+{
+  "$schema": "https://raw.githubusercontent.com/biomejs/biome/main/config-schema.json",
+  "files": {
+    "ignore": ["node_modules"]
+  },
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "a11y": {
+        "noAccessKey": "off",
+        "noAutofocus": "off",
+        "noBlankTarget": "off",
+        "noDistractingElements": "off",
+        "noHeaderScope": "off",
+        "noNoninteractiveElementToInteractiveRole": "off",
+        "noPositiveTabindex": "off",
+        "noRedundantAlt": "off",
+        "noSvgWithoutTitle": "off",
+        "useAltText": "off",
+        "useAnchorContent": "off",
+        "useAriaPropsForRole": "off",
+        "useButtonType": "off",
+        "useHtmlLang": "off",
+        "useIframeTitle": "off",
+        "useKeyWithClickEvents": "off",
+        "useKeyWithMouseEvents": "off",
+        "useMediaCaption": "off",
+        "useValidAnchor": "off",
+        "useValidAriaProps": "off",
+        "useValidLang": "off"
+      },
+      "complexity": {
+        "noExtraBooleanCast": "off",
+        "noBannedTypes": "off",
+        "noForEach": "off"
+      },
+      "correctness": {
+        "noUnusedVariables": "off",
+        "useExhaustiveDependencies": "off"
+      },
+      "performance": {
+        "noDelete": "off",
+        "noAccumulatingSpread": "off"
+      },
+      "style": {
+        "noNonNullAssertion": "off",
+        "useShorthandArrayType": "off"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "off",
+        "noExplicitAny": "off",
+        "noPrototypeBuiltins": "off",
+        "noConsoleLog": "off",
+        "noEmptyInterface": "off"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "jsxQuoteStyle": "single",
+      "trailingCommas": "all",
+      "semicolons": "asNeeded"
+    }
+  },
+  "organizeImports": {
+    "enabled": true
+  }
+}
