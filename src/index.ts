@@ -64,48 +64,53 @@ async function main() {
   const amount = await promptForAmount()
   console.log(`You entered: ${amount}\n`)
 
-  // 2) Example: call an ERC20 contract function using erc20ABI
-  const usdcAddress = getContractAddress('weth', 1)
-  const symbol = await getERC20Symbol(usdcAddress)
-  console.log(`Fetched token symbol: ${symbol}\n`)
+  // Example: call an ERC20 contract function using erc20ABI
+  // const usdcAddress = getContractAddress('weth', 1)
+  // const symbol = await getERC20Symbol(usdcAddress)
+  // console.log(`Fetched token symbol: ${symbol}\n`)
 
   // ===============================================
 
-  const targetCurrency = 'ZGBP' // Kraken uses 'ZGBP' for GBP
+  const targetCurrency = 'ZGBP'
   const pollingInterval = 60 * 1000 // 1 minute in milliseconds
 
   console.log(`Starting to poll ${targetCurrency} balance every minute...\n`)
 
+  // 2) Poll for balance
   const polling = setInterval(async () => {
     try {
       const balanceResult = await router.kraken.fetchBalance()
 
-      if (balanceResult) {
-        const currentBalanceStr = balanceResult[targetCurrency] || '0'
-        const currentBalance = Number.parseFloat(currentBalanceStr)
-
-        console.log(`Current ${targetCurrency} Balance: ${currentBalance}`)
-
-        if (currentBalance >= amount) {
-          console.log(`Balance updated, new balance is ${currentBalance}. Ready to swap.`)
-
-          clearInterval(polling)
-
-          const swapResult = await router.kraken.swapGBPtoUSDC(amount)
-
-          if (swapResult !== undefined) {
-            console.log(
-              `Swap initiated successfully for ${amount} ${targetCurrency} at ${swapResult} GBP per USDC.`,
-            )
-          } else {
-            console.error('Swap failed or was not initiated.')
-          }
-
-          process.exit(0)
-        }
-      } else {
-        console.error('Failed to retrieve balance.')
+      if (!balanceResult) {
+        return console.error('Failed to retrieve balance.')
       }
+
+      const currentBalanceStr = balanceResult[targetCurrency] || '0'
+      const currentBalance = Number.parseFloat(currentBalanceStr)
+
+      console.log(`Current ${targetCurrency} Balance: ${currentBalance}`)
+
+      if (currentBalance < amount) {
+        return console.log(`Balance is less than ${amount}. Waiting for balance to update...`)
+      }
+
+      console.log(`Balance updated, new balance is ${currentBalance}. Ready to swap.`)
+
+      clearInterval(polling)
+
+      // 3) Swap
+      const swapResult = await router.kraken.swapGBPtoUSDC(amount)
+
+      if (!swapResult) {
+        return console.error('Swap failed or was not initiated.')
+      }
+
+      console.log(
+        `Swap initiated successfully for ${amount} ${targetCurrency} at ${swapResult} GBP per USDC.`,
+      )
+
+      // 4) Exit
+      process.exit(0)
     } catch (error) {
       console.error('Error during polling:', error)
     }
