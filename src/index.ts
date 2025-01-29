@@ -69,8 +69,47 @@ async function main() {
   const symbol = await getERC20Symbol(usdcAddress)
   console.log(`Fetched token symbol: ${symbol}\n`)
 
-  // 3) Example: call Kraken api
-  router.kraken.fetchBalance()
+  // ===============================================
+
+  const targetCurrency = 'ZGBP' // Kraken uses 'ZGBP' for GBP
+  const pollingInterval = 60 * 1000 // 1 minute in milliseconds
+
+  console.log(`Starting to poll ${targetCurrency} balance every minute...\n`)
+
+  const polling = setInterval(async () => {
+    try {
+      const balanceResult = await router.kraken.fetchBalance()
+
+      if (balanceResult) {
+        const currentBalanceStr = balanceResult[targetCurrency] || '0'
+        const currentBalance = Number.parseFloat(currentBalanceStr)
+
+        console.log(`Current ${targetCurrency} Balance: ${currentBalance}`)
+
+        if (currentBalance >= amount) {
+          console.log(`Balance updated, new balance is ${currentBalance}. Ready to swap.`)
+
+          clearInterval(polling)
+
+          const swapResult = await router.kraken.swapGBPtoUSDC(amount)
+
+          if (swapResult !== undefined) {
+            console.log(
+              `Swap initiated successfully for ${amount} ${targetCurrency} at ${swapResult} GBP per USDC.`,
+            )
+          } else {
+            console.error('Swap failed or was not initiated.')
+          }
+
+          process.exit(0)
+        }
+      } else {
+        console.error('Failed to retrieve balance.')
+      }
+    } catch (error) {
+      console.error('Error during polling:', error)
+    }
+  }, pollingInterval)
 }
 
 // Run our main function, and handle errors

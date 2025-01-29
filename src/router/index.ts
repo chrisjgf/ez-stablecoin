@@ -1,4 +1,4 @@
-import { createKrakenModule } from './factories/kraken'
+import { createKrakenModule, type IKrakenExchange } from './factories/kraken'
 import type { IExchange, IExchangeConfig } from './factories/types'
 
 export interface IExchangeRouterConfig {
@@ -7,7 +7,7 @@ export interface IExchangeRouterConfig {
 }
 
 export class ExchangeRouter {
-  public kraken: IExchange
+  public kraken: IKrakenExchange
   public coinbase?: IExchange
 
   constructor(config: IExchangeRouterConfig) {
