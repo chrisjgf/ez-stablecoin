@@ -1,11 +1,12 @@
-import { format } from 'date-fns'
-import { random } from 'lodash'
 import * as readline from 'node:readline/promises'
 import { createPublicClient, erc20Abi, http } from 'viem'
 import { mainnet } from 'viem/chains'
 import { getContractAddress } from './constants/registry'
 import { getContractCall } from './helpers/viem'
-import { Router } from './router'
+import * as dotenv from 'dotenv'
+import { ExchangeRouter } from './router'
+
+dotenv.config()
 
 /**
  * Create a public client for Mainnet using viem.
@@ -26,21 +27,6 @@ const getERC20Symbol = async (tokenAddress: `0x${string}`): Promise<string> =>
     abi: erc20Abi,
     functionName: 'symbol',
   })
-
-/**
- * Mock API call
- */
-const mockApiCall = async (amount: number): Promise<boolean> => {
-  // 1 in 6 chance of success
-  const isSuccess = random(0, 5) === 5
-  console.log(
-    `[${format(
-      new Date(),
-      'HH:mm:ss',
-    )}] Mock API polled with amount=${amount}, success=${isSuccess}`,
-  )
-  return isSuccess
-}
 
 /**
  * Prompt user via Node readline for an amount input
@@ -64,14 +50,14 @@ const promptForAmount = async (): Promise<number> => {
   })
 }
 
-/**
- * Main workflow:
- *  - Prompt user for amount.
- *  - Demonstrate a contract call with `erc20ABI` (fetch USDC symbol).
- *  - Poll mock API every 10 seconds until success is returned.
- */
 async function main() {
-  const router = new Router().KrakenModule
+  const router = new ExchangeRouter({
+    kraken: {
+      apiKey: process.env.KRAKEN_API_KEY!,
+      apiSecret: process.env.KRAKEN_API_SECRET!,
+    },
+  })
+
   console.log('--- Welcome to Sensei ---')
 
   // 1) Prompt user
@@ -84,19 +70,7 @@ async function main() {
   console.log(`Fetched token symbol: ${symbol}\n`)
 
   // 3) Example: call Kraken api
-  router.swapFromWethToUsdc()
-
-  console.log('Entering pending state... will poll every 10 seconds.\n')
-
-  // 4) Poll logic
-  let success = false
-  while (!success) {
-    // Wait 10 seconds between polls
-    await new Promise((resolve) => setTimeout(resolve, 10_000))
-    success = await mockApiCall(amount)
-  }
-
-  console.log('Success! Terminating session.')
+  router.kraken.fetchBalance()
 }
 
 // Run our main function, and handle errors

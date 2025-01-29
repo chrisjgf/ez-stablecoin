@@ -1,9 +1,21 @@
-import { KrakenModule } from './modules/KrakenModule'
+import { createKrakenModule } from './factories/kraken'
+import type { IExchange, IExchangeConfig } from './factories/types'
 
-export class Router {
-  public KrakenModule: KrakenModule
+export interface IExchangeRouterConfig {
+  kraken: IExchangeConfig
+  coinbase?: IExchangeConfig
+}
 
-  constructor() {
-    this.KrakenModule = new KrakenModule()
+export class ExchangeRouter {
+  public kraken: IExchange
+  public coinbase?: IExchange
+
+  constructor(config: IExchangeRouterConfig) {
+    this.kraken = createKrakenModule(config.kraken)
+    console.info('Initialized Kraken module.\n')
+  }
+
+  public listExchanges(): string[] {
+    return ['kraken', 'coinbase']
   }
 }
