@@ -1,10 +1,12 @@
-import * as readline from 'node:readline/promises'
-import { createPublicClient, erc20Abi, http } from 'viem'
-import { mainnet } from 'viem/chains'
+import { createPublicClient, erc20Abi, http, createWalletClient } from 'viem'
+import { base, mainnet, optimism } from 'viem/chains'
 import { getContractAddress } from './constants/registry'
 import { getContractCall } from './helpers/viem'
-import * as dotenv from 'dotenv'
 import { ExchangeRouter } from './router'
+import { createAcrossClient } from '@across-protocol/app-sdk'
+import { privateKeyToAccount } from 'viem/accounts'
+import dotenv from 'dotenv'
+import readline from 'node:readline/promises'
 
 dotenv.config()
 
@@ -51,10 +53,40 @@ const promptForAmount = async (): Promise<number> => {
 }
 
 async function main() {
+  console.log(process.env.PK)
+
   const router = new ExchangeRouter({
     kraken: {
       apiKey: process.env.KRAKEN_API_KEY!,
       apiSecret: process.env.KRAKEN_API_SECRET!,
+    },
+    across: {
+      acrossInstance: createAcrossClient({
+        chains: [
+          {
+            ...optimism,
+            rpcUrls: {
+              default: {
+                http: [`https://optimism-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`],
+              },
+            },
+          },
+          {
+            ...base,
+            rpcUrls: {
+              default: {
+                http: [`https://base-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`],
+              },
+            },
+          },
+        ],
+        integratorId: '0xdead', // Replace with your integrator ID
+      }),
+      walletInstance: createWalletClient({
+        account: privateKeyToAccount(process.env.PK! as `0x${string}`),
+        chain: optimism,
+        transport: http(optimism.rpcUrls.default.http[0]),
+      }),
     },
   })
 
@@ -71,50 +103,58 @@ async function main() {
 
   // ===============================================
 
-  const targetCurrency = 'ZGBP'
-  const pollingInterval = 60 * 1000 // 1 minute in milliseconds
-
-  console.log(`Starting to poll ${targetCurrency} balance every minute...\n`)
-
   // 2) Poll for balance
-  const polling = setInterval(async () => {
-    try {
-      const balanceResult = await router.kraken.fetchBalance()
 
-      if (!balanceResult) {
-        return console.error('Failed to retrieve balance.')
+  const poll = async () => {
+    const targetCurrency = 'ZGBP'
+    const pollingInterval = 60 * 1000 // 1 minute in milliseconds
+
+    console.log(`Starting to poll ${targetCurrency} balance every minute...\n`)
+
+    const polling = setInterval(async () => {
+      try {
+        const balanceResult = await router.kraken.fetchBalance()
+
+        if (!balanceResult) {
+          return console.error('Failed to retrieve balance.')
+        }
+
+        const currentBalanceStr = balanceResult[targetCurrency] || '0'
+        const currentBalance = Number.parseFloat(currentBalanceStr)
+
+        console.log(`Current ${targetCurrency} Balance: ${currentBalance}`)
+
+        if (currentBalance < amount) {
+          return console.log(`Balance is less than ${amount}. Waiting for balance to update...`)
+        }
+
+        console.log(`Balance updated, new balance is ${currentBalance}. Ready to swap.`)
+
+        clearInterval(polling)
+
+        // 3) Swap
+        const swapResult = await router.kraken.swapGBPtoUSDC(amount)
+
+        if (!swapResult) {
+          return console.error('Swap failed or was not initiated.')
+        }
+
+        console.log(
+          `Swap initiated successfully for ${amount} ${targetCurrency} at ${swapResult} GBP per USDC.`,
+        )
+      } catch (error) {
+        console.error('Error during polling:', error)
       }
+    }, pollingInterval)
+  } // () ! commented out for testing
 
-      const currentBalanceStr = balanceResult[targetCurrency] || '0'
-      const currentBalance = Number.parseFloat(currentBalanceStr)
+  // 3) Withdraw from Kraken & watch wallet
 
-      console.log(`Current ${targetCurrency} Balance: ${currentBalance}`)
+  // 4) Bridge
+  await router.across?.bridge(amount)
 
-      if (currentBalance < amount) {
-        return console.log(`Balance is less than ${amount}. Waiting for balance to update...`)
-      }
-
-      console.log(`Balance updated, new balance is ${currentBalance}. Ready to swap.`)
-
-      clearInterval(polling)
-
-      // 3) Swap
-      const swapResult = await router.kraken.swapGBPtoUSDC(amount)
-
-      if (!swapResult) {
-        return console.error('Swap failed or was not initiated.')
-      }
-
-      console.log(
-        `Swap initiated successfully for ${amount} ${targetCurrency} at ${swapResult} GBP per USDC.`,
-      )
-
-      // 4) Exit
-      process.exit(0)
-    } catch (error) {
-      console.error('Error during polling:', error)
-    }
-  }, pollingInterval)
+  // 5) Exit
+  process.exit(0)
 }
 
 // Run our main function, and handle errors
