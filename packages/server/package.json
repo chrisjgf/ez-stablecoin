@@ -1,0 +1,22 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "private": true,
+  "main": "server.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsx src/server.ts",
+    "format-and-lint": "biome format . --write && biome check . --unsafe"
+  },
+  "dependencies": {
+    "@types/cors": "^2.8.17",
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "*",
+    "@types/express": "^5.0.0",
+    "tsx": "*",
+    "typescript": "*"
+  }
+}
